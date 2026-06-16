@@ -1,1 +1,166 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>القرآن الكريم</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#006400">
+    <!-- خط عثماني جميل من جوجل -->
+    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Amiri Quran', serif; background-color: #f8f9fa; margin: 0; padding: 0; color: #333; }
+        header { background-color: #006400; color: white; text-align: center; padding: 15px; position: sticky; top: 0; z-index: 100; }
+        h1 { margin: 0; font-size: 1.5rem; }
+        .container { padding: 15px; max-width: 800px; margin: 0 auto; }
+        .surah-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+        .surah-item { background: white; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: 0.3s; }
+        .surah-item:hover { background-color: #e8f5e9; }
+        .ayah-container { background: white; padding: 20px; border-radius: 8px; line-height: 2.2; font-size: 1.4rem; text-align: justify; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .basmala { text-align: center; font-size: 1.6rem; margin-bottom: 20px; color: #006400; }
+        .ayah-number { color: #006400; font-size: 1rem; border: 1px solid #006400; border-radius: 50%; padding: 2px 8px; margin: 0 5px; }
+        .back-btn { background: #006400; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-bottom: 15px; font-family: inherit; }
+        .audio-player { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); text-align: center; display: none; }
+        audio { width: 100%; max-width: 600px; }
+        .loading { text-align: center; padding: 20px; font-size: 1.2rem; color: #006400; }
+    </style>
+</head>
+<body>
 
+<header>
+    <h1 id="app-title">القرآن الكريم</h1>
+</header>
+
+<div class="container">
+    <div id="loading" class="loading">جاري تحميل البيانات...</div>
+    
+    <!-- قائمة السور -->
+    <div id="surah-list" class="surah-list" style="display: none;"></div>
+    
+    <!-- عرض السورة -->
+    <div id="surah-view" style="display: none;">
+        <button class="back-btn" onclick="showSurahList()">← العودة للقائمة</button>
+        <div id="basmala" class="basmala">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>
+        <div id="ayahs-container" class="ayah-container"></div>
+    </div>
+</div>
+
+<!-- مشغل الصوت -->
+<div id="audio-player" class="audio-player">
+    <audio id="quran-audio" controls></audio></div>
+
+<script>
+    // 1. تسجيل Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(() => console.log('✅ Service Worker تم تسجيله بنجاح'))
+            .catch(err => console.error('❌ فشل تسجيل Service Worker:', err));
+    }
+
+    const API_BASE = 'https://api.quran.com/api/v4';
+    let currentSurahData = null;
+
+    // 2. تحميل قائمة السور عند فتح التطبيق
+    async function loadSurahs() {
+        const loading = document.getElementById('loading');
+        const surahList = document.getElementById('surah-list');
+        
+        // محاولة جلب من الكاش أولاً (المتصفح سيتعامل مع هذا تلقائياً بفضل الـ SW)
+        try {
+            const response = await fetch(`${API_BASE}/chapters?language=ar`);
+            const data = await response.json();
+            
+            surahList.innerHTML = '';
+            data.chapters.forEach(surah => {
+                const div = document.createElement('div');
+                div.className = 'surah-item';
+                div.innerHTML = `<strong>${surah.id}. ${surah.name_arabic}</strong><br><small>${surah.verses_count} آية</small>`;
+                div.onclick = () => loadSurah(surah.id, surah.name_arabic);
+                surahList.appendChild(div);
+            });
+            
+            loading.style.display = 'none';
+            surahList.style.display = 'grid';
+            
+            // استرجاع آخر موضع قراءة
+            const lastRead = localStorage.getItem('lastReadSurah');
+            if (lastRead) {
+                console.log('آخر قراءة كانت في السورة:', lastRead);
+                // يمكن إضافة زر "متابعة القراءة" هنا
+            }
+        } catch (error) {
+            loading.innerHTML = '❌ فشل التحميل. تأكد من اتصالك بالإنترنت لأول مرة.';
+        }
+    }
+
+    // 3. تحميل آيات سورة محددة
+    async function loadSurah(surahNumber, surahName) {
+        document.getElementById('surah-list').style.display = 'none';
+        document.getElementById('surah-view').style.display = 'block';        document.getElementById('app-title').innerText = `سورة ${surahName}`;
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('loading').innerText = 'جاري تحميل الآيات...';
+
+        // حفظ آخر قراءة
+        localStorage.setItem('lastReadSurah', surahNumber);
+
+        try {
+            // جلب النص العثماني
+            const response = await fetch(`${API_BASE}/quran/verses/uthmani?chapter_number=${surahNumber}`);
+            const data = await response.json();
+            
+            const container = document.getElementById('ayahs-container');
+            container.innerHTML = '';
+            
+            // إخفاء البسملة إذا كانت الفاتحة أو التوبة
+            document.getElementById('basmala').style.display = (surahNumber == 1 || surahNumber == 9) ? 'none' : 'block';
+
+            let fullText = '';
+            data.verses.forEach(verse => {
+                // تنظيف نص البسملة من بداية الآيات (ما عدا الفاتحة) لأنها موجودة في الأعلى
+                let text = verse.text_uthmani;
+                if (surahNumber !== 1 && verse.verse_key.split(':')[1] === "1") {
+                    text = text.replace('بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ ', '');
+                }
+                fullText += `${text} <span class="ayah-number">${toArabicNumerals(verse.verse_key.split(':')[1])}</span> `;
+            });
+            
+            container.innerHTML = fullText;
+            
+            // تشغيل صوت السورة (مشاري العفاسي كمثال - يمكن تغيير الـ reciter)
+            // نستخدم everyayah.com لأنه يوفر روابط مباشرة وموثوقة لكل آية أو سورة كاملة
+            const audioPlayer = document.getElementById('audio-player');
+            const audio = document.getElementById('quran-audio');
+            // تنسيق رقم السورة ليصبح 3 خانات (مثال: 001, 012, 114)
+            const paddedNumber = String(surahNumber).padStart(3, '0');
+            audio.src = `https://server8.mp3quran.net/afs/${paddedNumber}.mp3`; 
+            audioPlayer.style.display = 'block';
+
+        } catch (error) {
+            document.getElementById('ayahs-container').innerHTML = '❌ فشل تحميل الآيات.';
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
+    }
+
+    // 4. العودة للقائمة الرئيسية
+    function showSurahList() {
+        document.getElementById('surah-view').style.display = 'none';
+        document.getElementById('surah-list').style.display = 'grid';        document.getElementById('app-title').innerText = 'القرآن الكريم';
+        document.getElementById('audio-player').style.display = 'none';
+        document.getElementById('quran-audio').pause();
+    }
+
+    // دالة مساعدة لتحويل الأرقام للإنجليزية لعرضها بشكل عربي شرقي
+    function toArabicNumerals(str) {
+        return str.replace(/[0-9]/g, function(w) {
+            const arabic = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+            return arabic[+w];
+        });
+    }
+
+    // بدء التشغيل
+    loadSurahs();
+</script>
+
+</body>
+</html>
