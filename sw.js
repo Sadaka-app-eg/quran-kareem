@@ -1,40 +1,52 @@
-const CACHE_NAME = 'quran-app-v1';
+const CACHE_NAME = 'quran-pwa-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json'
 ];
 
-// 1. تثبيت عامل الخدمة وحفظ الملفات الأساسية
+// 1. تثبيت وحفظ الملفات الأساسية
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
   );
+  self.skipWaiting();
 });
 
-// 2. تفعيل عامل الخدمة وحذف الـ Cache القديم إذا وجد
+// 2. تفعيل وحذف الذاكرة المؤقتة القديمة
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            return caches.delete(cache);
-          }
+          if (cache !== CACHE_NAME) return caches.delete(cache);
         })
       );
     })
   );
+  self.clients.claim();
 });
 
-// 3. اعتراض الطلبات: إذا كان هناك إنترنت اذهب للشبكة، وإذا لم يوجد اذهب للـ Cache
+// 3. اعتراض الطلبات (استراتيجية: الشبكة أولاً، ثم الذاكرة المؤقتة)
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      // إذا وجدنا الطلب في الـ Cache نعيده، وإلا نذهب للإنترنت
-      if (response) {
+    fetch(event.request)
+      .then((networkResponse) => {
+        // حفظ استجابات API في الذاكرة المؤقتة للعمل أوفلاين لاحقاً
+        if (event.request.url.includes('api.quran.com')) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        // إذا فشل الإنترنت، ارجع للذاكرة المؤقتة
+        return caches.match(event.request);
+      })
+  );
+});      if (response) {
         return response;
       }
       return fetch(event.request).then((networkResponse) => {
