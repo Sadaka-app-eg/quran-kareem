@@ -2,39 +2,451 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>القرآن الكريم</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>القرآن الكريم الشامل</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#006400">
-    <!-- خط عثماني جميل من جوجل -->
-    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Amiri Quran', serif; background-color: #f8f9fa; margin: 0; padding: 0; color: #333; }
-        header { background-color: #006400; color: white; text-align: center; padding: 15px; position: sticky; top: 0; z-index: 100; }
-        h1 { margin: 0; font-size: 1.5rem; }
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #333333;
+            --primary-color: #006400;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --highlight-color: rgba(0, 100, 0, 0.1);
+        }
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --primary-color: #4caf50;
+            --card-bg: #1e1e1e;
+            --border-color: #333333;
+            --highlight-color: rgba(76, 175, 80, 0.2);
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Tajawal', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; transition: background 0.3s, color 0.3s; padding-bottom: 80px; }
+        .quran-font { font-family: 'Amiri Quran', serif; line-height: 2.4; }
+        
+        header { background-color: var(--primary-color); color: white; padding: 15px; position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        h1 { margin: 0; font-size: 1.2rem; font-weight: 700; }
+        .header-icons button { background: none; border: none; color: white; font-size: 1.4rem; cursor: pointer; margin-right: 15px; }
+
         .container { padding: 15px; max-width: 800px; margin: 0 auto; }
-        .surah-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-        .surah-item { background: white; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: 0.3s; }
-        .surah-item:hover { background-color: #e8f5e9; }
-        .ayah-container { background: white; padding: 20px; border-radius: 8px; line-height: 2.2; font-size: 1.4rem; text-align: justify; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .basmala { text-align: center; font-size: 1.6rem; margin-bottom: 20px; color: #006400; }
-        .ayah-number { color: #006400; font-size: 1rem; border: 1px solid #006400; border-radius: 50%; padding: 2px 8px; margin: 0 5px; }
-        .back-btn { background: #006400; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-bottom: 15px; font-family: inherit; }
-        .audio-player { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); text-align: center; display: none; }
-        audio { width: 100%; max-width: 600px; }
-        .loading { text-align: center; padding: 20px; font-size: 1.2rem; color: #006400; }
-    </style>
-</head>
+        
+        .search-box { display: none; margin-bottom: 15px; }
+        .search-box input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color); font-family: 'Tajawal'; font-size: 1rem; outline: none; }
+        .search-box input:focus { border-color: var(--primary-color); }
+
+        .continue-reading { background: var(--card-bg); border: 1px solid var(--primary-color); padding: 15px; border-radius: 8px; margin-bottom: 15px; cursor: pointer; display: none; text-align: center; color: var(--primary-color); font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        
+        .surah-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+        .surah-item { background: var(--card-bg); padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid var(--border-color); transition: 0.2s; }
+        .surah-item:active { transform: scale(0.97); background-color: var(--highlight-color); }
+
+        .surah-view { display: none; }
+        .back-btn { background: var(--primary-color); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-family: 'Tajawal'; margin-bottom: 15px; display: inline-flex; align-items: center; gap: 5px; font-size: 0.95rem; }
+        .basmala { text-align: center; font-size: 1.6rem; margin: 20px 0; color: var(--primary-color); font-family: 'Amiri Quran', serif; }
+        .ayah-container { background: var(--card-bg); padding: 20px; border-radius: 8px; text-align: justify; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }        
+        .ayah-wrapper { display: inline; }
+        .ayah-text { cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: background 0.2s; }
+        .ayah-text:hover { background-color: var(--highlight-color); }
+        .ayah-number { color: var(--primary-color); font-size: 0.85rem; border: 1px solid var(--primary-color); border-radius: 50%; padding: 2px 6px; margin: 0 4px; font-family: 'Tajawal'; display: inline-block; }
+        
+        .ayah-actions { display: inline-flex; gap: 8px; margin-right: 6px; vertical-align: middle; }
+        .ayah-actions button { background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #888; padding: 0; transition: color 0.2s; }
+        .ayah-actions button:hover { color: var(--primary-color); }
+        .ayah-actions button.bookmarked { color: #d32f2f; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(3px); }
+        .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; position: relative; color: var(--text-color); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .close-modal { position: absolute; top: 15px; left: 15px; background: none; border: none; font-size: 1.8rem; cursor: pointer; color: var(--text-color); line-height: 1; }
+        
+        .setting-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
+        .setting-item:last-child { border-bottom: none; margin-bottom: 0; }
+        .font-controls button { background: var(--primary-color); color: white; border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-primary { background: var(--primary-color); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-family: 'Tajawal'; font-weight: bold; width: 100%; }
+
+        .audio-player { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card-bg); padding: 12px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); text-align: center; display: none; border-top: 1px solid var(--border-color); z-index: 90; }
+        audio { width: 100%; max-width: 600px; height: 40px; }
+
+        .loading { text-align: center; padding: 40px; font-size: 1.1rem; color: var(--primary-color); }
+        .error { text-align: center; padding: 20px; color: #d32f2f; background: rgba(211, 47, 47, 0.1); border-radius: 8px; }
+        .bookmark-item { padding: 10px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; justify-content: space-between; }
+        .bookmark-item:last-child { border-bottom: none; }
+        .delete-bm { color: #d32f2f; background: none; border: none; cursor: pointer; font-size: 1.2rem; }
+    </style</head>
 <body>
 
 <header>
     <h1 id="app-title">القرآن الكريم</h1>
+    <div class="header-icons">
+        <button onclick="toggleSearch()" title="بحث">🔍</button>
+        <button onclick="openSettings()" title="الإعدادات">⚙️</button>
+    </div>
 </header>
 
 <div class="container">
     <div id="loading" class="loading">جاري تحميل البيانات...</div>
     
-    <!-- قائمة السور -->
+    <div class="search-box" id="search-box">
+        <input type="text" id="search-input" placeholder="ابحث عن كلمة في القرآن..." onkeyup="handleSearch(event)">
+    </div>
+
+    <div id="continue-reading" class="continue-reading" onclick="resumeReading()">
+        📖 متابعة القراءة: <span id="last-read-name"></span>
+    </div>
+    <div id="surah-list" class="surah-list" style="display: none;"></div>
+    
+    <div id="surah-view" class="surah-view">
+        <button class="back-btn" onclick="showSurahList()">→ العودة للقائمة</button>
+        <div id="basmala" class="basmala">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>
+        <div id="ayahs-container" class="ayah-container quran-font"></div>
+    </div>
+</div>
+
+<div id="audio-player" class="audio-player">
+    <audio id="quran-audio" controls></audio>
+</div>
+
+<!-- Modal التفسير -->
+<div id="tafsir-modal" class="modal" onclick="closeModal(event, 'tafsir-modal')">
+    <div class="modal-content">
+        <button class="close-modal" onclick="document.getElementById('tafsir-modal').style.display='none'">×</button>
+        <h3 id="tafsir-title" style="color: var(--primary-color); margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;"></h3>
+        <div id="tafsir-text" style="line-height: 1.8; font-size: 1.05rem;"></div>
+    </div>
+</div>
+
+<!-- Modal الإعدادات -->
+<div id="settings-modal" class="modal" onclick="closeModal(event, 'settings-modal')">
+    <div class="modal-content">
+        <button class="close-modal" onclick="document.getElementById('settings-modal').style.display='none'">×</button>
+        <h3 style="margin-top: 0; color: var(--primary-color);">الإعدادات</h3>
+        
+        <div class="setting-item">
+            <span>الوضع الليلي</span>
+            <button onclick="toggleTheme()" id="theme-btn" class="btn-primary" style="width: auto; padding: 8px 15px;">تفعيل</button>
+        </div>
+        
+        <div class="setting-item">
+            <span>حجم خط المصحف</span>
+            <div class="font-controls">
+                <button onclick="changeFontSize(-0.1)">-</button>
+                <span id="font-size-display" style="margin: 0 12px; font-weight: bold;">1.5rem</span>
+                <button onclick="changeFontSize(0.1)">+</button>
+            </div>
+        </div>
+
+        <div class="setting-item" style="display: block;">
+            <span style="display: block; margin-bottom: 10px;">الإشارات المرجعية</span>
+            <button onclick="showBookmarksModal()" class="btn-primary">عرض المحفوظات (<span id="bm-count">0</span>)</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal الإشارات المرجعية --><div id="bookmarks-modal" class="modal" onclick="closeModal(event, 'bookmarks-modal')">
+    <div class="modal-content">
+        <button class="close-modal" onclick="document.getElementById('bookmarks-modal').style.display='none'">×</button>
+        <h3 style="margin-top: 0; color: var(--primary-color);">الإشارات المرجعية</h3>
+        <div id="bookmarks-list"></div>
+    </div>
+</div>
+
+<script>
+    // --- 1. التهيئة و Service Worker ---
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW Error:', err));
+    }
+
+    const API_BASE = 'https://api.quran.com/api/v4';
+    let currentFontSize = parseFloat(localStorage.getItem('quranFontSize')) || 1.5;
+    let bookmarks = JSON.parse(localStorage.getItem('quranBookmarks')) || [];
+    let lastRead = JSON.parse(localStorage.getItem('quranLastRead')) || null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        applyTheme();
+        applyFontSize();
+        updateBookmarkCount();
+        if (lastRead) {
+            document.getElementById('continue-reading').style.display = 'block';
+            document.getElementById('last-read-name').innerText = lastRead.name;
+        }
+        loadSurahs();
+    });
+
+    // --- 2. الوظائف الأساسية ---
+    async function loadSurahs() {
+        const loading = document.getElementById('loading');
+        const surahList = document.getElementById('surah-list');
+        try {
+            const response = await fetch(`${API_BASE}/chapters?language=ar`);
+            const data = await response.json();
+            surahList.innerHTML = '';
+            data.chapters.forEach(surah => {
+                const div = document.createElement('div');
+                div.className = 'surah-item';
+                div.innerHTML = `<strong>${surah.id}. ${surah.name_arabic}</strong><br><small style="color:#888">${surah.verses_count} آية</small>`;
+                div.onclick = () => openSurah(surah.id, surah.name_arabic);
+                surahList.appendChild(div);
+            });
+            loading.style.display = 'none';
+            surahList.style.display = 'grid';
+        } catch (error) {
+            loading.innerHTML = '<div class="error">❌ فشل التحميل. تأكد من اتصالك بالإنترنت.</div>';
+        }    }
+
+    async function openSurah(surahNumber, surahName) {
+        document.getElementById('surah-list').style.display = 'none';
+        document.getElementById('continue-reading').style.display = 'none';
+        document.getElementById('surah-view').style.display = 'block';
+        document.getElementById('app-title').innerText = `سورة ${surahName}`;
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('loading').innerText = 'جاري تحميل الآيات...';
+        document.getElementById('search-box').style.display = 'none';
+
+        // حفظ آخر قراءة
+        lastRead = { id: surahNumber, name: surahName };
+        localStorage.setItem('quranLastRead', JSON.stringify(lastRead));
+
+        try {
+            const response = await fetch(`${API_BASE}/quran/verses/uthmani?chapter_number=${surahNumber}`);
+            const data = await response.json();
+            
+            const container = document.getElementById('ayahs-container');
+            container.innerHTML = '';
+            document.getElementById('basmala').style.display = (surahNumber == 1 || surahNumber == 9) ? 'none' : 'block';
+
+            data.verses.forEach(verse => {
+                let text = verse.text_uthmani;
+                if (surahNumber !== 1 && verse.verse_key.split(':')[1] === "1") {
+                    text = text.replace('بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ ', '');
+                }
+
+                const isBookmarked = bookmarks.includes(verse.verse_key);
+                const verseNum = verse.verse_key.split(':')[1];
+
+                const wrapper = document.createElement('span');
+                wrapper.className = 'ayah-wrapper';
+                
+                const textSpan = document.createElement('span');
+                textSpan.className = 'ayah-text';
+                textSpan.innerHTML = `${text} <span class="ayah-number">${toArabicNumerals(verseNum)}</span>`;
+                textSpan.onclick = () => fetchAndShowTafsir(verse.verse_key);
+
+                const actions = document.createElement('span');
+                actions.className = 'ayah-actions';
+                actions.innerHTML = `
+                    <button onclick="fetchAndShowTafsir('${verse.verse_key}')" title="التفسير">📖</button>
+                    <button class="${isBookmarked ? 'bookmarked' : ''}" onclick="toggleBookmark('${verse.verse_key}', this)" title="إشارة مرجعية">🔖</button>
+                    <button onclick="copyAyah('${text.replace(/'/g, "\\'")}', '${verse.verse_key}')" title="نسخ">📋</button>
+                `;
+
+                wrapper.appendChild(textSpan);
+                wrapper.appendChild(actions);                container.appendChild(wrapper);
+            });
+
+            // إعداد الصوت (مشاري العفاسي)
+            const paddedNumber = String(surahNumber).padStart(3, '0');
+            const audio = document.getElementById('quran-audio');
+            audio.src = `https://server8.mp3quran.net/afs/${paddedNumber}.mp3`;
+            document.getElementById('audio-player').style.display = 'block';
+            applyFontSize(); // إعادة تطبيق حجم الخط على المحتوى الجديد
+
+        } catch (error) {
+            document.getElementById('ayahs-container').innerHTML = '<div class="error">❌ فشل تحميل الآيات.</div>';
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
+    }
+
+    function showSurahList() {
+        document.getElementById('surah-view').style.display = 'none';
+        document.getElementById('surah-list').style.display = 'grid';
+        if (lastRead) document.getElementById('continue-reading').style.display = 'block';
+        document.getElementById('app-title').innerText = 'القرآن الكريم';
+        document.getElementById('audio-player').style.display = 'none';
+        document.getElementById('quran-audio').pause();
+        document.getElementById('search-box').style.display = 'none';
+        document.getElementById('search-input').value = '';
+    }
+
+    function resumeReading() {
+        if (lastRead) openSurah(lastRead.id, lastRead.name);
+    }
+
+    // --- 3. الميزات المتقدمة ---
+    function toggleSearch() {
+        const searchBox = document.getElementById('search-box');
+        const isHidden = searchBox.style.display === 'none' || searchBox.style.display === '';
+        searchBox.style.display = isHidden ? 'block' : 'none';
+        if (isHidden) {
+            document.getElementById('search-input').focus();
+            document.getElementById('surah-list').style.display = 'none';
+            document.getElementById('continue-reading').style.display = 'none';
+            document.getElementById('surah-view').style.display = 'block';
+            document.getElementById('ayahs-container').innerHTML = '<div class="loading">اكتب للبحث...</div>';
+            document.getElementById('basmala').style.display = 'none';
+            document.getElementById('app-title').innerText = 'البحث في القرآن';
+            document.getElementById('audio-player').style.display = 'none';
+        } else {
+            showSurahList();
+        }
+    }
+    async function handleSearch(event) {
+        if (event.key === 'Enter') {
+            const query = event.target.value.trim();
+            if (query.length < 3) return;
+            
+            document.getElementById('ayahs-container').innerHTML = '<div class="loading">جاري البحث...</div>';
+            try {
+                const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}&language=ar&size=30`);
+                const data = await response.json();
+                
+                const container = document.getElementById('ayahs-container');
+                container.innerHTML = '';
+                
+                if (!data.search?.results || data.search.results.length === 0) {
+                    container.innerHTML = '<div class="error">لا توجد نتائج لهذا البحث.</div>';
+                } else {
+                    data.search.results.forEach(res => {
+                        const div = document.createElement('div');
+                        div.style.marginBottom = '15px';
+                        div.style.padding = '15px';
+                        div.style.background = 'var(--card-bg)';
+                        div.style.borderRadius = '8px';
+                        div.style.border = '1px solid var(--border-color)';
+                        div.style.cursor = 'pointer';
+                        div.innerHTML = `<small style="color:var(--primary-color); font-weight:bold;">سورة ${res.verse.chapter_name} - آية ${res.verse.verse_key.split(':')[1]}</small><br>
+                                         <span class="quran-font" style="font-size: ${currentFontSize}rem; display:block; margin-top:8px;">${res.text}</span>`;
+                        div.onclick = () => {
+                            document.getElementById('search-box').style.display = 'none';
+                            openSurah(res.verse.chapter_id, res.verse.chapter_name);
+                        };
+                        container.appendChild(div);
+                    });
+                }
+            } catch (error) {
+                document.getElementById('ayahs-container').innerHTML = '<div class="error">❌ فشل البحث.</div>';
+            }
+        }
+    }
+
+    async function fetchAndShowTafsir(verseKey) {
+        document.getElementById('tafsir-title').innerText = `تفسير الآية: ${verseKey}`;
+        document.getElementById('tafsir-text').innerHTML = '<div class="loading">جاري جلب التفسير...</div>';
+        document.getElementById('tafsir-modal').style.display = 'flex';
+
+        try {
+            // 169 هو تفسير ابن كثير، 171 هو التفسير الميسر
+            const response = await fetch(`${API_BASE}/quran/tafsirs/169/by_ayah/${verseKey}`);
+            const data = await response.json();
+            const cleanText = data.tafsir.text.replace(/<[^>]*>/g, ''); // إزالة وسوم HTML            document.getElementById('tafsir-text').innerText = cleanText;
+        } catch (error) {
+            document.getElementById('tafsir-text').innerText = 'عذراً، لم يتم العثور على التفسير.';
+        }
+    }
+
+    function toggleBookmark(verseKey, btnElement) {
+        if (bookmarks.includes(verseKey)) {
+            bookmarks = bookmarks.filter(b => b !== verseKey);
+            btnElement.classList.remove('bookmarked');
+        } else {
+            bookmarks.push(verseKey);
+            btnElement.classList.add('bookmarked');
+        }
+        localStorage.setItem('quranBookmarks', JSON.stringify(bookmarks));
+        updateBookmarkCount();
+    }
+
+    function copyAyah(text, verseKey) {
+        const fullText = `${text} [${verseKey}]`;
+        navigator.clipboard.writeText(fullText).then(() => {
+            alert('✅ تم نسخ الآية بنجاح!');
+        }).catch(() => {
+            alert('❌ فشل النسخ.');
+        });
+    }
+
+    // --- 4. الإعدادات ---
+    function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
+    
+    function closeModal(event, modalId) {
+        if (event.target.id === modalId) document.getElementById(modalId).style.display = 'none';
+    }
+
+    function toggleTheme() {
+        const isDark = document.body.getAttribute('data-theme') === 'dark';
+        document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        localStorage.setItem('quranTheme', isDark ? 'light' : 'dark');
+        document.getElementById('theme-btn').innerText = isDark ? 'تفعيل' : 'إلغاء';
+    }
+
+    function applyTheme() {
+        const theme = localStorage.getItem('quranTheme') || 'light';
+        document.body.setAttribute('data-theme', theme);
+        document.getElementById('theme-btn').innerText = theme === 'dark' ? 'إلغاء' : 'تفعيل';
+    }
+
+    function changeFontSize(delta) {
+        currentFontSize = Math.max(1.0, Math.min(3.0, currentFontSize + delta));
+        localStorage.setItem('quranFontSize', currentFontSize);        applyFontSize();
+    }
+
+    function applyFontSize() {
+        document.querySelectorAll('.quran-font').forEach(el => el.style.fontSize = `${currentFontSize}rem`);
+        document.getElementById('font-size-display').innerText = `${currentFontSize.toFixed(1)}rem`;
+    }
+
+    function updateBookmarkCount() {
+        document.getElementById('bm-count').innerText = bookmarks.length;
+    }
+
+    function showBookmarksModal() {
+        const list = document.getElementById('bookmarks-list');
+        list.innerHTML = '';
+        if (bookmarks.length === 0) {
+            list.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">لا توجد إشارات مرجعية محفوظة.</div>';
+        } else {
+            bookmarks.forEach(bm => {
+                const [surah, ayah] = bm.split(':');
+                const div = document.createElement('div');
+                div.className = 'bookmark-item';
+                div.innerHTML = `<span>سورة ${getSurahNameById(surah)} - آية ${toArabicNumerals(ayah)}</span>
+                                 <button class="delete-bm" onclick="removeBookmark('${bm}')">🗑️</button>`;
+                div.onclick = (e) => {
+                    if (!e.target.classList.contains('delete-bm')) {
+                        document.getElementById('bookmarks-modal').style.display = 'none';
+                        document.getElementById('settings-modal').style.display = 'none';
+                        openSurah(surah, getSurahNameById(surah));
+                    }
+                };
+                list.appendChild(div);
+            });
+        }
+        document.getElementById('bookmarks-modal').style.display = 'flex';
+    }
+
+    function removeBookmark(verseKey) {
+        bookmarks = bookmarks.filter(b => b !== verseKey);
+        localStorage.setItem('quranBookmarks', JSON.stringify(bookmarks));
+        updateBookmarkCount();
+        showBookmarksModal(); // إعادة رسم القائمة
+    }
+
+    // دالة مساعدة لجلب اسم السورة من الرقم (مبسطة للعرض)
+    function getSurahNameById(id) {
+        // يمكن تحسينها بجلب القائمة مرة واحدة، لكن للتبسيط هنا نتركها أو نستخدم تخزين محلي
+        return `السورة ${id}`; 
+    }
+    function toArabicNumerals(str) {
+        return str.toString().replace(/[0-9]/g, function(w) {
+            return ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'][+w];
+        });
+    }
+</script>
+</body>
+                     </html>    <!-- قائمة السور -->
     <div id="surah-list" class="surah-list" style="display: none;"></div>
     
     <!-- عرض السورة -->
